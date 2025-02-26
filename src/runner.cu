@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 
 float get_sec() {
   struct timeval time;
@@ -501,6 +502,104 @@ void runSgemmDoubleBuffering2(int M, int N, int K, float alpha, float *A,
       <<<gridDim, blockDim>>>(M, N, K, alpha, A, B, beta, C);
 }
 
+void runSgemmDoubleBuffering2Loop(int M, int N, int K, float alpha, float *A,
+                                  float *B, float beta, float *C) {
+  // List of thread block sizes we want to try:
+  const uint threadOptions[] = {64, 128, 256};
+
+  // We'll reuse the same tile settings for simplicity. 
+  // Adjust as needed if you want different tile sizes per thread count.
+  constexpr uint K12_BN = 128;
+  constexpr uint K12_BM = 128;
+  constexpr uint K12_BK = 16;
+  constexpr uint K12_WN = 64;
+  constexpr uint K12_WM = 64;
+  constexpr uint K12_WNITER = 4;
+  constexpr uint K12_TN = 4;
+  constexpr uint K12_TM = 8;
+
+  // For computing GFLOPS, total floating-point operations for GEMM = 2*M*N*K
+  double totalFlops = 2.0 * static_cast<double>(M) *
+                      static_cast<double>(N) * static_cast<double>(K);
+
+  // Loop over each candidate thread block size.
+  for (auto threads : threadOptions) {
+    std::cout << "\nRunning GEMM with K12_NUM_THREADS = " << threads << std::endl;
+
+    // Create CUDA events for timing.
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    // Record start event.
+    cudaEventRecord(start);
+
+    // Switch on 'threads' to instantiate the kernel template.
+    switch (threads) {
+    case 64: {
+      constexpr uint K12_NUM_THREADS = 64;
+      dim3 blockDim(K12_NUM_THREADS);
+      dim3 gridDim(CEIL_DIV(N, K12_BN), CEIL_DIV(M, K12_BM));
+
+      runSgemmDoubleBuffering2<K12_BM, K12_BN, K12_BK, K12_WM, K12_WN,
+                               K12_WNITER, K12_TM, K12_TN, K12_NUM_THREADS>
+          <<<gridDim, blockDim>>>(M, N, K, alpha, A, B, beta, C);
+      break;
+    }
+    case 128: {
+      constexpr uint K12_NUM_THREADS = 128;
+      dim3 blockDim(K12_NUM_THREADS);
+      dim3 gridDim(CEIL_DIV(N, K12_BN), CEIL_DIV(M, K12_BM));
+
+      runSgemmDoubleBuffering2<K12_BM, K12_BN, K12_BK, K12_WM, K12_WN,
+                               K12_WNITER, K12_TM, K12_TN, K12_NUM_THREADS>
+          <<<gridDim, blockDim>>>(M, N, K, alpha, A, B, beta, C);
+      break;
+    }
+    case 256: {
+      constexpr uint K12_NUM_THREADS = 256;
+      dim3 blockDim(K12_NUM_THREADS);
+      dim3 gridDim(CEIL_DIV(N, K12_BN), CEIL_DIV(M, K12_BM));
+
+      runSgemmDoubleBuffering2<K12_BM, K12_BN, K12_BK, K12_WM, K12_WN,
+                               K12_WNITER, K12_TM, K12_TN, K12_NUM_THREADS>
+          <<<gridDim, blockDim>>>(M, N, K, alpha, A, B, beta, C);
+      break;
+    }
+    default:
+      std::cerr << "Unsupported thread block size: " << threads << std::endl;
+      // Clean up events before returning.
+      cudaEventDestroy(start);
+      cudaEventDestroy(stop);
+      continue;
+    }
+
+    // Record stop event and synchronize.
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+
+    // Calculate elapsed time in milliseconds.
+    float milliseconds = 0.0f;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+
+    // Convert to seconds.
+    double seconds = static_cast<double>(milliseconds) / 1000.0;
+
+    // Compute GFLOPS.
+    double gflops = (totalFlops / 1e9) / seconds;
+
+    // Print results.
+    std::cout << "Kernel12 execution time: " << seconds << " s" << std::endl;
+    std::cout << "Performance: " << gflops << " GFLOPS" << std::endl;
+
+    // Destroy events for this iteration.
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+  }
+}
+
+
+
 void run_kernel(int kernel_num, int M, int N, int K, float alpha, float *A,
                 float *B, float beta, float *C, cublasHandle_t handle) {
   switch (kernel_num) {
@@ -542,6 +641,9 @@ void run_kernel(int kernel_num, int M, int N, int K, float alpha, float *A,
     break;
   case 12:
     runSgemmDoubleBuffering2(M, N, K, alpha, A, B, beta, C);
+    break;
+  case 13: //new case
+    runSgemmDoubleBuffering2Loop(M, N, K, alpha, A, B, beta, C);
     break;
   default:
     throw std::invalid_argument("Unknown kernel number");
