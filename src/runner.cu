@@ -649,3 +649,46 @@ void run_kernel(int kernel_num, int M, int N, int K, float alpha, float *A,
     throw std::invalid_argument("Unknown kernel number");
   }
 }
+
+// Explicitly instantiate all required kernel configurations
+template __global__ void runSgemmDoubleBuffering2<64, 128, 32, 64, 64, 4, 8, 4, 64>(
+  int, int, int, float, float*, float*, float, float*);
+// template __global__ void runSgemmDoubleBuffering2<128, 128, 32, 64, 64, 4, 8, 4, 64>(
+//   int, int, int, float, float*, float*, float, float*);
+template __global__ void runSgemmDoubleBuffering2<256, 128, 32, 64, 64, 4, 8, 4, 64>(
+  int, int, int, float, float*, float*, float, float*);
+
+template __global__ void runSgemmDoubleBuffering2<128, 64, 32, 64, 64, 4, 8, 4, 64>(
+  int, int, int, float, float*, float*, float, float*);
+// template __global__ void runSgemmDoubleBuffering2<128, 128, 32, 64, 64, 4, 8, 4, 64>(
+//   int, int, int, float, float*, float*, float, float*);
+template __global__ void runSgemmDoubleBuffering2<128, 256, 32, 64, 64, 4, 8, 4, 64>(
+  int, int, int, float, float*, float*, float, float*);
+
+template __global__ void runSgemmDoubleBuffering2<128, 128, 16, 64, 64, 4, 8, 4, 64>(
+  int, int, int, float, float*, float*, float, float*);
+template __global__ void runSgemmDoubleBuffering2<128, 128, 32, 64, 64, 4, 8, 4, 64>(
+  int, int, int, float, float*, float*, float, float*);
+template __global__ void runSgemmDoubleBuffering2<128, 128, 64, 64, 64, 4, 8, 4, 64>(
+  int, int, int, float, float*, float*, float, float*);
+
+// template __global__ void runSgemmDoubleBuffering2<128, 128, 32, 32, 64, 4, 8, 4, 64>(
+//   int, int, int, float, float*, float*, float, float*);
+// template __global__ void runSgemmDoubleBuffering2<128, 128, 32, 64, 64, 4, 8, 4, 64>(
+//   int, int, int, float, float*, float*, float, float*);
+// template __global__ void runSgemmDoubleBuffering2<128, 128, 32, 128, 64, 4, 8, 4, 64>(
+//   int, int, int, float, float*, float*, float, float*);
+
+// template __global__ void runSgemmDoubleBuffering2<128, 128, 32, 64, 32, 4, 8, 4, 64>(
+//   int, int, int, float, float*, float*, float, float*);
+// template __global__ void runSgemmDoubleBuffering2<128, 128, 32, 64, 64, 4, 8, 4, 64>(
+//   int, int, int, float, float*, float*, float, float*);
+// template __global__ void runSgemmDoubleBuffering2<128, 128, 32, 64, 128, 4, 8, 4, 64>(
+//   int, int, int, float, float*, float*, float, float*);
+
+// template __global__ void runSgemmDoubleBuffering2<128, 128, 32, 64, 64, 1, 8, 4, 64>(
+//   int, int, int, float, float*, float*, float, float*);
+// template __global__ void runSgemmDoubleBuffering2<128, 128, 32, 64, 64, 2, 8, 4, 64>(
+//   int, int, int, float, float*, float*, float, float*);
+// template __global__ void runSgemmDoubleBuffering2<128, 128, 32, 64, 64, 4, 8, 4, 64>(
+//   int, int, int, float, float*, float*, float, float*);
